@@ -1,0 +1,3 @@
+# for put to /etc/cron.d/
+# for backup slave; for master replace --dump-slave=2 by --master-data=2
+0 2  * * *   backup   server="localhost"; share="backup"; dump_name="/place/backup/dump-`date +\%Y\%m\%d\%H`.sql"; mysqldump --all-databases --single-transaction --dump-date --dump-slave=2 --result-file=$dump_name && rsync -q $dump_name ${server}::${backup}/ && rm $dump_name

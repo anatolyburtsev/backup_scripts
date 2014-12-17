@@ -3,12 +3,14 @@
 today=`date "+%Y%m%d"`
 today_in_sec=`date "+%s"`
 let "sec_in_day=60*60*24"
-count_of_backup="1" #how mamy backup save locally
+count_of_backup="1" #how many backup save locally
 let "last_backup=$today_in_sec - $sec_in_day*$count_of_backup"
 last_backup_name="`date --date=\"@${last_backup}\" \"+%Y%m%d\"`"
-path_to_backup="/place/elasticsearch/backup"
+path_to_backup="/place/elasticsearch/backup/"
+#if failed more shards than limit then backup stoped
+failed_count_limit=2
 #save by rsync
-backup_server=""
+backup_server="deposito"
 path_to_remote_backup="antivirus/elasticsearch"
 PROGNAME=$(basename $0)
 log="/var/log/${PROGNAME}.log"
@@ -38,11 +40,14 @@ backup() {
     fi
     echo "delete old backup with name current backup" >> $log
     res=`curl -XDELETE "localhost:9200/_snapshot/my_backup/snapshot_${today}"` || true
+    rm -rf $path_to_backup
+    install -d -o elasticsearch -g elasticsearch $path_to_backup
     echo "Start backup" >> $log
-    res=`curl -XPUT "localhost:9200/_snapshot/my_backup/snapshot_${today}?wait_for_completion=true" 2>/dev/null`
+    res=`curl -XPUT "localhost:9200/_snapshot/my_backup/snapshot_${today}?wait_for_completion=true&pretty" 2>/dev/null`
     #check status SUCCESS or FAIL
     answ=`echo $res|grep -o "\"state\":\"\w*\""|grep -o "[[:upper:]]*"`
-    if [ "$answ" == "SUCCESS" ]; then
+    failed_count=`echo $res|grep -A 3 '"shards" : {'|grep '"failed" :'|grep -o "[0-9]*"`
+    if [ "$answ" == "SUCCESS" ] || [ "$answ" == "PARTIAL" && "$failed_count" -lt "$failed_count_limit" ]; then
         echo "Remove old backup" >> $log
             res=`curl -XDELETE "localhost:9200/_snapshot/my_backup/snapshot_${last_backup_name}"` || true
     else
@@ -52,7 +57,7 @@ backup() {
 
     rsync -rq ${path_to_backup} ${backup_server}::${path_to_remote_backup}/`hostname -s`$today
 
-    check_exit_code "failed save on deposito"
+    check_exit_code "failed save on $backup_server"
 
 }
 

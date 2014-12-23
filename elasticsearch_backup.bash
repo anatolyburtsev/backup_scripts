@@ -1,4 +1,6 @@
 #!/bin/bash
+# DO NOT USE IT!!!
+# USE VERSION WITH CURATOR
 
 today=`date "+%Y%m%d"`
 today_in_sec=`date "+%s"`

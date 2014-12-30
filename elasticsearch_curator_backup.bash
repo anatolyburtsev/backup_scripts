@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -eu
 backup_server="deposito"
 path_to_remote_backup="antivirus/elasticsearch"
 curator=`which curator`

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eu
 #
 # backup and restore cassandra, incremental backup doesn't support
 # author: onotole@yandex-team.ru

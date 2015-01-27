@@ -87,7 +87,7 @@ restore() {
                 mv -f $dir/* $dst/
         done
     chown -R cassandra:cassandra $path_to_data
-        start cassandra service cassandra start
+        service cassandra start
     check_exit_code "coudn't start cassandra"
          
 

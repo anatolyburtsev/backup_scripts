@@ -80,7 +80,6 @@ restore() {
     rm -rf $path_to_commitlog/*
     find $path_to_data -type f -name "*.db" -delete  
 
-<<<<<<< HEAD
     #download backup and put it in right places
     rm -rf $path_to_backup/restore
     rsync -qr ${backup_server}::${path_to_remote_backup}/${day}.tar $path_to_backup/
@@ -92,18 +91,6 @@ restore() {
     #done
     #chown -R cassandra:cassandra $path_to_data
     #service cassandra start
-=======
-        #download backup and put it in right places
-        rm -rf $path_to_backup/restore
-        rsync -qr ${backup_server}::${path_to_remote_backup}/$day/backup $path_to_backup/restore
-        for dir in $path_to_backup/restore/backup/*; do
-        dst=`echo $dir|sed -e 's%.*/%%' -e 's/snapshot.*//g' -e 's\%%\/\g'`
-        mkdir -p $dst
-                mv -f $dir/* $dst/
-        done
-    chown -R cassandra:cassandra $path_to_data
-        service cassandra start
->>>>>>> e65090a9999b69d79b458606345a5839ac929d90
     check_exit_code "coudn't start cassandra"
          
 

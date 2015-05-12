@@ -46,7 +46,7 @@ backup() {
 
     #save backup
     tar cf ${path_to_backup}.tar ${path_to_backup}
-    rsync -rq $path_to_backup.tar ${backup_server}::${path_to_remote_backup}/`hostname -s`$today 1>$log 2>&1
+    rsync -rq $path_to_backup.tar ${backup_server}::${path_to_remote_backup}/`hostname -s`${today}.tar 1>$log 2>&1
     check_exit_code "couldn't save backup on $backup_server"
     
     #delete local backup
@@ -82,6 +82,7 @@ restore() {
 
     #download backup and put it in right places
     rm -rf $path_to_backup/restore
+    mkdir -p $path_to_backup/
     rsync -qr ${backup_server}::${path_to_remote_backup}/${day}.tar $path_to_backup/
     tar xf $path_to_backup/${day}.tar -C $path_to_backup/
     #for dir in $path_to_backup/restore/backup/*; do

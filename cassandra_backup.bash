@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -eux
 #
 # backup and restore cassandra, incremental backup doesn't support
 # author: onotole@yandex-team.ru
@@ -11,7 +11,7 @@ path_to_data="/place/cassandra/data"
 path_to_commitlog="/place/cassandra/commitlog"
 path_to_backup="/place/cassandra/backup" 
 log="/var/log/cassandra_backup.log" 
-backup_server=""
+backup_server="deposito.yandex.ru"
 path_to_remote_backup="antivirus/cassandra" 
 
 check_exit_code() {
@@ -25,31 +25,33 @@ check_exit_code() {
 }
 
 backup() {
-        nodetool status 1>/dev/null 2>&1
-        check_exit_code "cassandra not launch"
+    nodetool status 1>/dev/null 2>&1
+    check_exit_code "cassandra not launch"
 
-        #remove old snapshot
-        nodetool clearsnapshot 1>$log 2>&1
-        check_exit_code "couldn't delete old backup"
+    #remove old snapshot
+    nodetool clearsnapshot 1>$log 2>&1
+    check_exit_code "couldn't delete old backup"
     rm -rf $path_to_backup
     mkdir -p $path_to_backup
     chown cassandra $path_to_backup
 
-        #create backup
-        nodetool snapshot -t backup$today 1>$log 2>&1
-        check_exit_code "couldn't create backup"
+    #create backup
+    nodetool snapshot -t backup$today 1>$log 2>&1
+    check_exit_code "couldn't create backup"
 
-        #collect all backup in one dir
-        for dir in `find $path_to_data -name "backup$today"`; do 
-                mv -f $dir ${path_to_backup}/`echo $dir|sed -e s'\/\%%\g'`
-        done
+    #collect all backup in one dir
+    for dir in `find $path_to_data -name "backup$today"`; do 
+        mv -f $dir ${path_to_backup}/`echo $dir|sed -e s'\/\%%\g'`
+    done
 
-        #save backup
-        rsync -rq $path_to_backup ${backup_server}::${path_to_remote_backup}/`hostname -s`$today 1>$log 2>&1
-        check_exit_code "couldn't save backup on $backup_server"
+    #save backup
+    tar cf ${path_to_backup}.tar ${path_to_backup}
+    rsync -rq $path_to_backup.tar ${backup_server}::${path_to_remote_backup}/`hostname -s`$today 1>$log 2>&1
+    check_exit_code "couldn't save backup on $backup_server"
     
     #delete local backup
     rm -rf $path_to_backup
+    rm -rf ${path_to_backup}.tar
 }
 
 restore() {
@@ -78,16 +80,17 @@ restore() {
     rm -rf $path_to_commitlog/*
     find $path_to_data -type f -name "*.db" -delete  
 
-        #download backup and put it in right places
-        rm -rf $path_to_backup/restore
-        rsync -qr ${backup_server}::${path_to_remote_backup}/$day/backup $path_to_backup/restore
-        for dir in $path_to_backup/restore/backup/*; do
-        dst=`echo $dir|sed -e 's%.*/%%' -e 's/snapshot.*//g' -e 's\%%\/\g'`
-        mkdir -p $dst
-                mv -f $dir/* $dst/
-        done
-    chown -R cassandra:cassandra $path_to_data
-        start cassandra service cassandra start
+    #download backup and put it in right places
+    rm -rf $path_to_backup/restore
+    rsync -qr ${backup_server}::${path_to_remote_backup}/${day}.tar $path_to_backup/
+    tar xf $path_to_backup/${day}.tar -C $path_to_backup/
+    #for dir in $path_to_backup/restore/backup/*; do
+    #    dst=`echo $dir|sed -e 's%.*/%%' -e 's/snapshot.*//g' -e 's\%%\/\g'`
+    #    mkdir -p $dst
+    #    mv -f $dir/* $dst/
+    #done
+    #chown -R cassandra:cassandra $path_to_data
+    #service cassandra start
     check_exit_code "coudn't start cassandra"
          
 

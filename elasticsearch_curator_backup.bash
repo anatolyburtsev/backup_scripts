@@ -1,8 +1,23 @@
 #!/bin/sh
 set -eu
-backup_server="deposito"
+backup_server="deposito.yandex.ru"
 path_to_remote_backup="antivirus/elasticsearch"
-curator=`which curator`
+curator=/antivirus/.env/bin/curator #`which curator`
+
+#setup snapshot for elasticsearch 
+res=`curl -XGET 'http://localhost:9200/_snapshot' 2>/dev/null`
+
+if [ "$res" == "{}" ] ; then 
+
+curl -XPUT 'http://localhost:9200/_snapshot/my_backup' -d '{
+    "type": "fs",
+    "settings": {
+        "location": "/place/elasticsearch/backup",
+        "compress": true
+    }
+}'
+
+fi
 
 $curator --loglevel ERROR snapshot --repository my_backup --delete-older-than 1
 $curator --loglevel ERROR snapshot --all-indices --repository my_backup

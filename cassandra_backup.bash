@@ -83,17 +83,16 @@ restore() {
     #download backup and put it in right places
     rm -rf $path_to_backup/restore
     mkdir -p $path_to_backup/
-    rsync -qr ${backup_server}::${path_to_remote_backup}/${day}.tar $path_to_backup/
-    tar xf $path_to_backup/${day}.tar -C $path_to_backup/
-    #for dir in $path_to_backup/restore/backup/*; do
-    #    dst=`echo $dir|sed -e 's%.*/%%' -e 's/snapshot.*//g' -e 's\%%\/\g'`
-    #    mkdir -p $dst
-    #    mv -f $dir/* $dst/
-    #done
-    #chown -R cassandra:cassandra $path_to_data
-    #service cassandra start
-    check_exit_code "coudn't start cassandra"
-         
+    rsync -qr ${backup_server}::${path_to_remote_backup}/${day} $path_to_backup/
+    tar xf $path_to_backup/${day} -C $path_to_backup/
+    for dir in $path_to_backup/$day/backup/*; do
+        dst=`echo $dir|sed -e 's%.*/%%' -e 's/snapshot.*//g' -e 's\%%\/\g'`
+        mkdir -p $dst
+        mv -f $dir/* $dst/
+    done
+    chown -R cassandra:cassandra $path_to_data
+    service cassandra start
+    check_exit_code "coudn't start cassandra" 
 
 }
 

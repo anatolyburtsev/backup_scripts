@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-backup_server="deposito.yandex.ru"
+backup_server=""
 path_to_remote_backup="antivirus/elasticsearch"
 
 curator=`which curator`
